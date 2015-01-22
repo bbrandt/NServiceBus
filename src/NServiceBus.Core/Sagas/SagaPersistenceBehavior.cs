@@ -12,7 +12,7 @@
     using NServiceBus.Unicast;
     using NServiceBus.Unicast.Messages;
 
-    class SagaPersistenceBehavior : IBehavior<IncomingContext>
+    class SagaPersistenceBehavior : HandlingStageBehavior
     {
         public ISagaPersister SagaPersister { get; set; }
 
@@ -22,7 +22,7 @@
 
         public SagaMetaModel SagaMetaModel { get; set; }
 
-        public void Invoke(IncomingContext context, Action next)
+        public override void Invoke(Context context, Action next)
         {
             currentContext = context;
 
@@ -142,7 +142,7 @@
         }
 
         [ObsoleteEx(RemoveInVersion = "6.0", TreatAsErrorFromVersion = "5.1", Message = "Enriching the headers for saga related information has been moved to the SagaAudit plugin in ServiceControl.  Add a reference to the Saga audit plugin in your endpoint to get more information.")]
-        void LogSaga(ActiveSagaInstance saga, IncomingContext context)
+        void LogSaga(ActiveSagaInstance saga, Context context)
         {
 
             var audit = string.Format("{0}:{1}", saga.Metadata.Name, saga.SagaId);
@@ -284,7 +284,7 @@
             return sagaEntity;
         }
 
-        IncomingContext currentContext;
+        Context currentContext;
 
         static ILog logger = LogManager.GetLogger<SagaPersistenceBehavior>();
 
@@ -294,7 +294,6 @@
                 : base(WellKnownStep.InvokeSaga, typeof(SagaPersistenceBehavior), "Invokes the saga logic")
             {
                 InsertBefore(WellKnownStep.InvokeHandlers);
-                InsertAfter("SetCurrentMessageBeingHandled");
             }
         }
     }

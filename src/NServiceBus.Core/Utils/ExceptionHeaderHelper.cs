@@ -9,13 +9,13 @@
     {
         static bool useLegacyStackTrace = String.Equals(ConfigurationManager.AppSettings["NServiceBus/Headers/UseLegacyExceptionStackTrace"], "true", StringComparison.OrdinalIgnoreCase);
 
-        public static void SetExceptionHeaders(this TransportMessage message,Exception e, Address failedQueue, string reason = null)
+        public static void SetExceptionHeaders(this TransportMessage message,Exception e, string failedQueue, string reason = null)
         {
             var headers = message.Headers;
             SetExceptionHeaders(headers, e, failedQueue, reason, useLegacyStackTrace);
         }
 
-        internal static void SetExceptionHeaders(Dictionary<string, string> headers, Exception e, Address failedQueue, string reason, bool legacyStackTrace)
+        internal static void SetExceptionHeaders(Dictionary<string, string> headers, Exception e, string failedQueue, string reason, bool legacyStackTrace)
         {
             if (!string.IsNullOrWhiteSpace(reason))
             {
@@ -39,7 +39,7 @@
             {
                 headers["NServiceBus.ExceptionInfo.StackTrace"] = e.ToString();
             }
-            headers[FaultsHeaderKeys.FailedQ] = failedQueue.ToString();
+            headers[FaultsHeaderKeys.FailedQ] = failedQueue;
             headers["NServiceBus.TimeOfFailure"] = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow);
         }
     }

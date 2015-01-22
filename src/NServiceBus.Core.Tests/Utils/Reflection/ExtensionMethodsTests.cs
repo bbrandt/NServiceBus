@@ -35,7 +35,7 @@
         [Test]
         public void Should_return_true_for_particular_assembly()
         {
-            Assert.IsTrue(typeof(ExecuteLogicalMessagesBehavior).IsFromParticularAssembly());
+            Assert.IsTrue(typeof(ExecuteLogicalMessagesConnector).IsFromParticularAssembly());
         }
 
         [Test]
