@@ -68,8 +68,7 @@ namespace NServiceBus.Unicast
                 messageSender,
                 messageRouter,
                 outgoingMessageHeaders,
-                callbackMessageLookup,
-                builder.Build<OutgoingPipeline>());
+                callbackMessageLookup);
         }
 
         /// <summary>

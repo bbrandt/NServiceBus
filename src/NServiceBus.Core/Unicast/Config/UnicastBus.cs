@@ -104,9 +104,6 @@ namespace NServiceBus.Features
             }, DependencyLifecycle.InstancePerCall);
 
 
-
-            context.Container.ConfigureComponent(b => new OutgoingPipeline(b, context.Settings.Get<PipelineModifications>()), DependencyLifecycle.SingleInstance);
-
             ConfigureSubscriptionAuthorization(context);
 
 
@@ -179,8 +176,7 @@ namespace NServiceBus.Features
                 builder.Build<ISendMessages>(),
                 builder.Build<StaticMessageRouter>(),
                 builder.Build<StaticOutgoingMessageHeaders>(),
-                builder.Build<CallbackMessageLookup>(),
-                builder.Build<OutgoingPipeline>());
+                builder.Build<CallbackMessageLookup>());
         }
 
         static Guid GenerateDefaultHostId(out string fullPathToStartingExe)
