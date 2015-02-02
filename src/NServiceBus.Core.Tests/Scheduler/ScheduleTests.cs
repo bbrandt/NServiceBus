@@ -11,7 +11,7 @@
     [TestFixture]
     public class ScheduleTests
     {
-        private const string ACTION_NAME = "my action";
+        private const string TASK_NAME = "my task";
         private FuncBuilder _builder = new FuncBuilder();
         private FakeBus _bus = new FakeBus();
 
@@ -31,8 +31,8 @@
         [Test]
         public void When_scheduling_an_action_with_a_name_the_task_should_get_that_name()
         {
-            Schedule.Every(TimeSpan.FromMinutes(5)).Action(ACTION_NAME, () => { });
-            Assert.That(EnsureThatNameExists(ACTION_NAME));
+            Schedule.Every(TimeSpan.FromMinutes(5)).Action(TASK_NAME, () => { });
+            Assert.That(EnsureThatNameExists(TASK_NAME));
         }
 
         [Test]
@@ -41,6 +41,13 @@
             Schedule.Every(TimeSpan.FromMinutes(5)).Action(() => {  });
             Assert.That(EnsureThatNameExists("ScheduleTests"));
         }
+
+        [Test]
+        public void When_scheduling_a_unique_action_with_same_task_name_more_than_once_should_throw()
+        {
+            Schedule.Every(TimeSpan.FromMinutes(3)).UniqueTask(TASK_NAME, () => { });
+            Assert.Throws<Exception>(() => Schedule.Every(TimeSpan.FromMinutes(5)).UniqueTask(TASK_NAME, () => { }));
+         }		         
 
         [Test]
         public void Schedule_tasks_using_multiple_threads()
