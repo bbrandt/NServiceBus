@@ -45,8 +45,8 @@
         [Test]
         public void When_scheduling_a_unique_action_with_same_task_name_more_than_once_should_throw()
         {
-            Schedule.Every(TimeSpan.FromMinutes(3)).UniqueTask(TASK_NAME, () => { });
-            Assert.Throws<Exception>(() => Schedule.Every(TimeSpan.FromMinutes(5)).UniqueTask(TASK_NAME, () => { }));
+            Schedule.Every(TimeSpan.FromMinutes(3)).Task(TASK_NAME, () => { });
+            Assert.Throws<Exception>(() => Schedule.Every(TimeSpan.FromMinutes(5)).Task(TASK_NAME, () => { }));
          }		         
 
         [Test]
