@@ -86,31 +86,32 @@ namespace NServiceBus.InMemory.SagaPersister
 
         void ValidateUniqueProperties(IContainSagaData saga)
         {
-            var sagaMetaData = sagaModel.FindByEntityName(saga.GetType().FullName);
+            var sagaType = saga.GetType();
+            var sagaMetaData = sagaModel.FindByEntityName(sagaType.FullName);
             var existingSagas = (from s in data
-                where s.Value.SagaEntity.GetType() == saga.GetType() && (s.Key != saga.Id)
+                where s.Value.SagaEntity.GetType() == sagaType && (s.Key != saga.Id)
                 select s.Value)
                 .ToList();
             foreach (var correlationProperty in sagaMetaData.CorrelationProperties)
             {
-                var uniqueProperty = saga.GetType().GetProperty(correlationProperty.Name);
+                var uniqueProperty = sagaType.GetProperty(correlationProperty.Name);
                 if (!uniqueProperty.CanRead)
                 {
                     continue;
                 }
-                var inComingSagaPropertyValue = uniqueProperty.GetValue(saga, null);
-                if (inComingSagaPropertyValue == null)
+                var incomingSagaPropertyValue = uniqueProperty.GetValue(saga, null);
+                if (incomingSagaPropertyValue == null)
                 {
-                    var message = string.Format("Cannot store saga with id '{0}' since the unique property '{1}' has a null value.", saga.Id, uniqueProperty);
+                    var message = string.Format("Cannot store saga with id '{0}' since the unique property '{1}' has a null value.", saga.Id, uniqueProperty.Name);
                     throw new InvalidOperationException(message);
                 }
 
                 foreach (var storedSaga in existingSagas)
                 {
                     var storedSagaPropertyValue = uniqueProperty.GetValue(storedSaga.SagaEntity, null);
-                    if (Equals(inComingSagaPropertyValue, storedSagaPropertyValue))
+                    if (Equals(incomingSagaPropertyValue, storedSagaPropertyValue))
                     {
-                        var message = string.Format("Cannot store a saga. The saga with id '{0}' already has property '{1}' with value '{2}'.", storedSaga.SagaEntity.Id, uniqueProperty, storedSagaPropertyValue);
+                        var message = string.Format("Cannot store a saga. The saga with id '{0}' already has property '{1}' with value '{2}'.", storedSaga.SagaEntity.Id, uniqueProperty.Name, storedSagaPropertyValue);
                         throw new InvalidOperationException(message);
                     }
                 }
