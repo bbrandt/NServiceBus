@@ -3,7 +3,6 @@ namespace NServiceBus
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Transactions;
@@ -18,13 +17,12 @@ namespace NServiceBus
     using NServiceBus.ObjectBuilder.Common;
     using NServiceBus.Pipeline;
     using NServiceBus.Settings;
-    using NServiceBus.Utils;
     using NServiceBus.Utils.Reflection;
 
     /// <summary>
     ///     Configuration used to create a bus instance
     /// </summary>
-    public class BusConfiguration : ExposeSettings
+    public partial class BusConfiguration : ExposeSettings
     {
         /// <summary>
         /// Initializes a fresh instance of the builder
@@ -33,8 +31,11 @@ namespace NServiceBus
             : base(new SettingsHolder())
         {
             configurationSourceToUse = new DefaultConfigurationSource();
-            Settings.Set<PipelineModifications>(new PipelineModifications());
-            Pipeline = new PipelineSettings(this);
+
+            var pipelineModifications = new PipelineModifications();
+
+            Settings.Set<PipelineModifications>(pipelineModifications);
+            Pipeline = new PipelineSettings(pipelineModifications);
 
             Settings.SetDefault("Endpoint.SendOnly", false);
             Settings.SetDefault("Transactions.Enabled", true);
@@ -50,44 +51,50 @@ namespace NServiceBus
         public PipelineSettings Pipeline { get; private set; }
 
         /// <summary>
+        ///     Endpoint wide outgoing headers to be added to all sent messages.
+        /// </summary>
+        public IDictionary<string, string> OutgoingHeaders
+        {
+            get { return outgoingHeaders = outgoingHeaders ?? new Dictionary<string, string>(); }
+        }
+
+        /// <summary>
         ///     Used to configure components in the container.
         /// </summary>
         public void RegisterComponents(Action<IConfigureComponents> registration)
         {
+            Guard.AgainstNull(registration, "registration");
             registrations.Add(registration);
         }
 
         /// <summary>
-        ///     Specifies the range of types that NServiceBus scans for handlers etc.
+        /// 
         /// </summary>
-        public void TypesToScan(IEnumerable<Type> typesToScan)
+        /// <param name="assemblies"></param>
+        public void ExcludeAssemblies(params string[] assemblies)
         {
-            scannedTypes = typesToScan.ToList();
+            Guard.AgainstNull(assemblies, "assemblies");
+
+            if (assemblies.Any(string.IsNullOrWhiteSpace))
+            {
+                throw new ArgumentException("Passed in a null or empty assembly name.", "assemblies");
+            }
+            excludedAssemblies = excludedAssemblies.Union(assemblies, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         /// <summary>
-        ///     The assemblies to include when scanning for types.
+        /// 
         /// </summary>
-        public void AssembliesToScan(IEnumerable<Assembly> assemblies)
+        /// <param name="types"></param>
+        public void ExcludeTypes(params Type[] types)
         {
-            AssembliesToScan(assemblies.ToArray());
-        }
+            Guard.AgainstNull(types, "types");
+            if (types.Any(x => x == null))
+            {
+                throw new ArgumentException("Passed in a null or empty type.", "types");
+            }
 
-        /// <summary>
-        ///     The assemblies to include when scanning for types.
-        /// </summary>
-        public void AssembliesToScan(params Assembly[] assemblies)
-        {
-            scannedTypes = Configure.GetAllowedTypes(assemblies);
-        }
-
-        /// <summary>
-        ///     Specifies the directory where NServiceBus scans for types.
-        /// </summary>
-        public void ScanAssembliesInDirectory(string probeDirectory)
-        {
-            directory = probeDirectory;
-            AssembliesToScan(GetAssembliesInDirectory(probeDirectory));
+            excludedTypes = excludedTypes.Union(types).ToList();
         }
 
         /// <summary>
@@ -95,6 +102,7 @@ namespace NServiceBus
         /// </summary>
         public void CustomConfigurationSource(IConfigurationSource configurationSource)
         {
+            Guard.AgainstNull(configurationSource, "configurationSource");
             configurationSourceToUse = configurationSource;
         }
 
@@ -103,16 +111,8 @@ namespace NServiceBus
         /// </summary>
         public void EndpointName(string name)
         {
+            Guard.AgainstNullAndEmpty(name, "name");
             endpointName = name;
-        }
-
-        /// <summary>
-        ///     Defines the version of this endpoint.
-        /// </summary>
-        [ObsoleteEx(RemoveInVersion = "6", TreatAsErrorFromVersion = "5.2", Message = "This api does not do anything.")]
-        public void EndpointVersion(string version)
-        {
-            endpointVersion = version;
         }
 
         /// <summary>
@@ -143,6 +143,7 @@ namespace NServiceBus
         /// <param name="definitionType">The type of the builder</param>
         public void UseContainer(Type definitionType)
         {
+            Guard.AgainstNull(definitionType, "definitionType");
             Guard.TypeHasDefaultConstructor(definitionType, "definitionType");
 
             UseContainer(definitionType.Construct<ContainerDefinition>().CreateContainer(Settings));
@@ -154,6 +155,7 @@ namespace NServiceBus
         /// <param name="builder">The instance to use</param>
         public void UseContainer(IContainer builder)
         {
+            Guard.AgainstNull(builder, "builder");
             customBuilder = builder;
         }
 
@@ -161,8 +163,9 @@ namespace NServiceBus
         /// Sets the public return address of this endpoint.
         /// </summary>
         /// <param name="address">The public address.</param>
-        public void OverridePublicReturnAddress(Address address)
+        public void OverridePublicReturnAddress(string address)
         {
+            Guard.AgainstNullAndEmpty(address, "address");
             publicReturnAddress = address;
         }
 
@@ -172,7 +175,16 @@ namespace NServiceBus
         /// <param name="queue">The queue name.</param>
         public void OverrideLocalAddress(string queue)
         {
+            Guard.AgainstNullAndEmpty(queue, "queue");
             Settings.Set("NServiceBus.LocalAddress", queue);
+        }
+
+        /// <summary>
+        ///     Specifies the range of types that NServiceBus scans for handlers etc.
+        /// </summary>
+        internal void TypesToScanInternal(IEnumerable<Type> typesToScan)
+        {
+            scannedTypes = typesToScan.ToList();
         }
 
         /// <summary>
@@ -188,19 +200,11 @@ namespace NServiceBus
                     directoryToScan = HttpRuntime.BinDirectory;
                 }
 
-                ScanAssembliesInDirectory(directoryToScan);
+                scannedTypes = GetAllowedTypes(directoryToScan);
             }
-
-            scannedTypes = scannedTypes.Union(Configure.GetAllowedTypes(Assembly.GetExecutingAssembly())).ToList();
-
-            if (HttpRuntime.AppDomainAppId == null)
+            else
             {
-                var baseDirectory = directory ?? AppDomain.CurrentDomain.BaseDirectory;
-                var hostPath = Path.Combine(baseDirectory, "NServiceBus.Host.exe");
-                if (File.Exists(hostPath))
-                {
-                    scannedTypes = scannedTypes.Union(Configure.GetAllowedTypes(Assembly.LoadFrom(hostPath))).ToList();
-                }
+                scannedTypes = scannedTypes.Union(GetAllowedCoreTypes()).ToList();
             }
 
             Settings.SetDefault("TypesToScan", scannedTypes);
@@ -236,30 +240,42 @@ namespace NServiceBus
 
             Settings.SetDefault<Conventions>(conventionsBuilder.Conventions);
 
-            return new Configure(Settings, container, registrations, Pipeline);
+            return new Configure(Settings, container, registrations, Pipeline, outgoingHeaders);
         }
 
-        IEnumerable<Assembly> GetAssembliesInDirectory(string path, params string[] assembliesToSkip)
+        List<Type> GetAllowedTypes(string path)
         {
-            var assemblyScanner = new AssemblyScanner(path);
-            assemblyScanner.MustReferenceAtLeastOneAssembly.Add(typeof(IHandleMessages<>).Assembly);
-            if (assembliesToSkip != null)
-            {
-                assemblyScanner.AssembliesToSkip = assembliesToSkip.ToList();
-            }
+            var assemblyScanner = new AssemblyScanner(path)
+                                  {
+                                      AssembliesToSkip = excludedAssemblies,
+                                      TypesToSkip = excludedTypes
+                                  };
             return assemblyScanner
                 .GetScannableAssemblies()
-                .Assemblies;
+                .Types;
+        }
+
+        List<Type> GetAllowedCoreTypes()
+        {
+            var assemblyScanner = new AssemblyScanner(Assembly.GetExecutingAssembly())
+            {
+                TypesToSkip = excludedTypes
+            };
+            return assemblyScanner
+                .GetScannableAssemblies()
+                .Types;
         }
 
         IConfigurationSource configurationSourceToUse;
         ConventionsBuilder conventionsBuilder = new ConventionsBuilder();
         List<Action<IConfigureComponents>> registrations = new List<Action<IConfigureComponents>>();
         IContainer customBuilder;
-        string directory;
         string endpointName;
         string endpointVersion;
         IList<Type> scannedTypes;
-        Address publicReturnAddress;
+        List<Type> excludedTypes = new List<Type>();
+        List<string> excludedAssemblies = new List<string>();
+        string publicReturnAddress;
+        Dictionary<string, string> outgoingHeaders;
     }
 }

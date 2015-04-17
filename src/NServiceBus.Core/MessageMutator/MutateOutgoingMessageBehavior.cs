@@ -2,16 +2,14 @@
 {
     using System;
     using NServiceBus.MessageMutator;
-    using Pipeline;
-    using Pipeline.Contexts;
-    using Unicast.Transport;
+    using NServiceBus.Pipeline;
+    using NServiceBus.Pipeline.Contexts;
 
-
-    class MutateOutgoingMessageBehavior : IBehavior<OutgoingContext>
+    class MutateOutgoingMessageBehavior : Behavior<OutgoingContext>
     {
-        public void Invoke(OutgoingContext context, Action next)
+        public override void Invoke(OutgoingContext context, Action next)
         {
-            if (context.OutgoingLogicalMessage.IsControlMessage())
+            if (context.IsControlMessage())
             {
                 next();
                 return;

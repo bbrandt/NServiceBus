@@ -16,6 +16,7 @@
         /// <typeparam name="T"><see cref="StorageType"/></typeparam>
         protected void Supports<T>(Action<SettingsHolder> action) where T : StorageType
         {
+            Guard.AgainstNull(action, "action");
             if (storageToActionMap.ContainsKey(typeof(T)))
             {
                 throw new Exception(string.Format("Action for {0} already defined.", typeof(T)));
@@ -29,7 +30,7 @@
         [ObsoleteEx(
            RemoveInVersion = "7.0",
            TreatAsErrorFromVersion = "6.0",
-           Replacement = "Supports<T>()")]
+           ReplacementTypeOrMember = "Supports<T>()")]
         protected void Supports(Storage storage, Action<SettingsHolder> action)
         {
             var storageType = StorageType.FromEnum(storage);
@@ -45,6 +46,7 @@
         /// </summary>
         protected void Defaults(Action<SettingsHolder> action)
         {
+            Guard.AgainstNull(action, "action");
             defaults.Add(action);
         }
 
@@ -54,7 +56,7 @@
         [ObsoleteEx(
             RemoveInVersion = "7.0",
             TreatAsErrorFromVersion = "6.0",
-            Replacement = "HasSupportFor<T>()")]
+            ReplacementTypeOrMember = "HasSupportFor<T>()")]
         public bool HasSupportFor(Storage storage)
         {
             return storageToActionMap.ContainsKey(StorageType.FromEnum(storage));
@@ -71,8 +73,9 @@
         /// <summary>
         /// True if supplied storage is supported
         /// </summary>
-        public bool HasSupportFor(Type storageType) 
+        public bool HasSupportFor(Type storageType)
         {
+            Guard.AgainstNull(storageType, "storageType");
             return storageToActionMap.ContainsKey(storageType);
         }
 

@@ -20,6 +20,8 @@
         /// </summary>
         public WireEncryptedString(SerializationInfo info, StreamingContext context)
         {
+            Guard.AgainstNull(info,"info");
+            Guard.AgainstNull(context, "context");
             EncryptedValue = info.GetValue("EncryptedValue", typeof (EncryptedValue)) as EncryptedValue;
         }
         /// <summary>
@@ -34,26 +36,11 @@
         {
             get
             {
-                if (encryptedValue != null)
-                    return encryptedValue;
-
-                if(EncryptedBase64Value != null)
-                    return new EncryptedValue
-                               {
-                                   EncryptedBase64Value = EncryptedBase64Value,
-                                   Base64Iv =  Base64Iv
-                               };
-                return null;
+                return encryptedValue;
             }
             set
             {
                 encryptedValue = value;
-
-                if(encryptedValue != null)
-                {
-                    EncryptedBase64Value = encryptedValue.EncryptedBase64Value;
-                    Base64Iv = encryptedValue.Base64Iv;
-                }
             }
         }
         EncryptedValue encryptedValue;
@@ -63,13 +50,13 @@
         /// <summary>
         /// Only kept for backwards compatibility reasons
         /// </summary>
-        [ObsoleteEx(TreatAsErrorFromVersion = "6.0",RemoveInVersion = "6.0",Message = "No longer required")]
+        [ObsoleteEx(TreatAsErrorFromVersion = "6.0", RemoveInVersion = "7.0", Message = "No longer required")]
         public string EncryptedBase64Value { get; set; }
 
         /// <summary>
         /// Only kept for backwards compatibility reasons
         /// </summary>
-        [ObsoleteEx(TreatAsErrorFromVersion = "6.0", RemoveInVersion = "6.0", Message = "No longer required")]
+        [ObsoleteEx(TreatAsErrorFromVersion = "6.0", RemoveInVersion = "7.0", Message = "No longer required")]
         public string Base64Iv { get; set; }
         
         //****
@@ -95,6 +82,8 @@
         /// </summary>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            Guard.AgainstNull(info, "info");
+            Guard.AgainstNull(context, "context");
             info.AddValue("EncryptedValue", EncryptedValue);
         }
     }

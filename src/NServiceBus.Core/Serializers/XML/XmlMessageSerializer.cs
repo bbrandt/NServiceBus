@@ -19,6 +19,8 @@ namespace NServiceBus.Serializers.XML
         /// <param name="conventions">The endpoint conventions.</param>
         public XmlMessageSerializer(IMessageMapper mapper, Conventions conventions)
         {
+            Guard.AgainstNull(mapper, "mapper");
+            Guard.AgainstNull(conventions, "conventions");
             this.mapper = mapper;
             this.conventions = conventions;
         }
@@ -59,12 +61,7 @@ namespace NServiceBus.Serializers.XML
                 return null;
             }
 
-            var deserializer = new Deserializer(mapper, cache)
-            {
-                SanitizeInput = SanitizeInput,
-                SkipWrappingRawXml = SkipWrappingRawXml,
-            };
-
+            var deserializer = new Deserializer(mapper, cache, SkipWrappingRawXml, SanitizeInput);
             return deserializer.Deserialize(stream, messageTypesToDeserialize);
         }
 
@@ -73,14 +70,10 @@ namespace NServiceBus.Serializers.XML
         /// </summary>
         public void Serialize(object message, Stream stream)
         {
-            var serializer = new Serializer(mapper, conventions, cache)
+            using (var serializer = new Serializer(mapper, stream, message, conventions, cache, SkipWrappingRawXml, Namespace))
             {
-                Namespace = Namespace,
-                SkipWrappingRawXml = SkipWrappingRawXml,
-            };
-
-            var buffer = serializer.Serialize(message);
-            stream.Write(buffer, 0, buffer.Length);
+                serializer.Serialize();
+            }
         }
 
         /// <summary>

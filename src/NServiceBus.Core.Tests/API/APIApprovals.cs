@@ -1,40 +1,37 @@
 ﻿namespace NServiceBus.Core.Tests.API
 {
-    using System.Collections.Generic;
+    using System;
     using System.IO;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using ApiApprover;
-    using ApprovalTests.Namers;
-    using ApprovalTests.Reporters;
+    using ApprovalTests;
+    using Mono.Cecil;
     using NUnit.Framework;
 
-    [UseReporter(typeof(DiffReporter))]
     [TestFixture]
     public class APIApprovals
     {
-        [Explicit]
         [Test]
-        [TestCaseSource("AssemblyPaths")]
-        [UseApprovalSubdirectory("approvals")]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void approve_public_api(string assembly, string path)
+        public void ApproveNServiceBus()
         {
-            PublicApiApprover.ApprovePublicApi(Path.Combine(path, assembly));
+            var assemblyPath = Path.GetFullPath(typeof(IBus).Assembly.Location);
+            var asm = AssemblyDefinition.ReadAssembly(assemblyPath);
+            var publicApi = Filter(PublicApiGenerator.CreatePublicApiForAssembly(asm));
+            Approvals.Verify(publicApi);
         }
 
-        public static IEnumerable<TestCaseData> AssemblyPaths
+        string Filter(string text)
         {
-            get
+            return string.Join(Environment.NewLine, text.Split(new[]
             {
-                yield return ArgsFor<IBus>();
-            }
+                Environment.NewLine
+            }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(l => !l.StartsWith("[assembly: ReleaseDateAttribute("))
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                );
         }
 
-        private static TestCaseData ArgsFor<T>()
-        {
-            var path = Path.GetFullPath(typeof(T).Assembly.Location);
-
-            return new TestCaseData(Path.GetFileName(path), Path.GetDirectoryName(path));
-        }
     }
 }

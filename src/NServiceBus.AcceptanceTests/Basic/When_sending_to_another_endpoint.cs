@@ -19,12 +19,10 @@
             Scenario.Define(context)
                     .WithEndpoint<Sender>(b => b.Given((bus, c) =>
                     {
-                        bus.OutgoingHeaders["MyStaticHeader"] = "StaticHeaderValue";
-                        bus.Send<MyMessage>(m=>
-                        {
-                            m.Id = c.Id;
-                            bus.SetMessageHeader(m, "MyHeader", "MyHeaderValue");
-                        });
+                        var sendOptions = new SendOptions()
+                            .AddHeader("MyHeader", "MyHeaderValue");
+                        
+                        bus.Send(new MyMessage{Id = c.Id}, sendOptions);
                     }))
                     .WithEndpoint<Receiver>()
                     .Done(c => c.WasCalled)
@@ -54,7 +52,7 @@
         {
             public Sender()
             {
-                EndpointSetup<DefaultServer>()
+                EndpointSetup<DefaultServer>(c => c.OutgoingHeaders.Add("MyStaticHeader", "StaticHeaderValue"))
                     .AddMapping<MyMessage>(typeof(Receiver));
             }
         }
@@ -79,7 +77,7 @@
 
                     Context.TimesCalled++;
 
-                    Context.MyHeader = Bus.GetMessageHeader(message, "MyHeader");
+                    Context.MyHeader = Bus.CurrentMessageContext.Headers["MyHeader"];
 
                     Context.ReceivedHeaders = Bus.CurrentMessageContext.Headers;
 

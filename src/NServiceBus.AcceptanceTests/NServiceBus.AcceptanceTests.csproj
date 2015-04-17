@@ -13,7 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>0ace0c06</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>9237d857</NuGetPackageImportStamp>
     <CreateDeploymentPackage>False</CreateDeploymentPackage>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -46,6 +46,7 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Messaging" />
     <Reference Include="System.Reactive.Core">
       <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
     </Reference>
@@ -65,12 +66,18 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Basic\When_deferring_to_non_local.cs" />
+    <Compile Include="DeliveryOptions\When_message_with_TimeToBeReceived_fails.cs" />
+    <Compile Include="DeliveryOptions\When_auditing_message_with_TimeToBeReceived.cs" />
     <Compile Include="Audit\When_ForwardReceivedMessagesTo_is_set.cs" />
     <Compile Include="Audit\When_a_replymessage_is_audited.cs" />
     <Compile Include="Audit\When_using_audit_message_is_received.cs" />
+    <Compile Include="Basic\When_receiving_with_catch_all_handlers_registered.cs" />
+    <Compile Include="Basic\When_handling_message_with_several_messagehandlers.cs" />
     <Compile Include="Basic\When_registering_custom_serializer.cs" />
     <Compile Include="Basic\When_callback_from_a_send_only.cs" />
     <Compile Include="Basic\When_injecting_handler_props.cs" />
+    <Compile Include="Basic\When_using_sendoptions.cs" />
     <Compile Include="Basic\When_using_ineedinitialization.cs" />
     <Compile Include="Basic\When_sending_with_conventions.cs" />
     <Compile Include="Basic\When_using_callbacks_with_messageid_eq_cid_.cs" />
@@ -79,13 +86,25 @@
     <Compile Include="Basic\When_using_a_greedy_convention.cs" />
     <Compile Include="Basic\When_incoming_headers_should_be_shared.cs" />
     <Compile Include="Basic\When_sending_ensure_proper_headers.cs" />
-    <Compile Include="Basic\When_TimeToBeReceived_has_not_expired.cs" />
-    <Compile Include="Basic\When_TimeToBeReceived_has_expired.cs" />
+    <Compile Include="DeliveryOptions\When_sending_a_non_durable_message.cs" />
+    <Compile Include="DeliveryOptions\When_TimeToBeReceived_has_not_expired.cs" />
+    <Compile Include="DeliveryOptions\When_TimeToBeReceived_has_expired.cs" />
     <Compile Include="Basic\When_Deferring_a_message.cs" />
     <Compile Include="Basic\When_using_callback_to_get_message.cs" />
+    <Compile Include="ConfigureMsmqTransport.cs" />
+    <Compile Include="NonDTC\When_dispatching_transport_operations.cs" />
     <Compile Include="PerfMon\CriticalTime\When_deferring_a_message.cs" />
     <Compile Include="PubSub\When_publishing_from_sendonly.cs" />
+    <Compile Include="MessageId\When_message_has_empty_id_header.cs" />
     <Compile Include="PubSub\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
+    <Compile Include="Sagas\When_a_finder_exists_and_found_saga.cs" />
+    <Compile Include="Retries\When_performing_slr_with_regular_exception.cs" />
+    <Compile Include="Retries\When_performing_slr_with_serialization_exception.cs" />
+    <Compile Include="Sagas\When_doing_request_response_between_sagas_first_handler_responding.cs" />
+    <Compile Include="Sagas\When_doing_request_response_between_sagas_response_from_noninitiating.cs" />
+    <Compile Include="Sagas\When_doing_request_response_between_sagas_with_timeout.cs" />
+    <Compile Include="Sagas\When_receiving_that_should_start_a_saga_without_interception.cs" />
+    <Compile Include="Sagas\When_receiving_that_should_start_a_saga_with_interception.cs" />
     <Compile Include="Sagas\When_sagas_cant_be_found.cs" />
     <Compile Include="ScaleOut\When_individualization_is_enabled_for_msmq.cs" />
     <Compile Include="ScaleOut\When_no_discriminator_is_available.cs" />
@@ -95,15 +114,14 @@
     <Compile Include="CriticalError\When_registering_a_custom_criticalErrorHandler.cs" />
     <Compile Include="DataBus\When_using_custom_IDataBus.cs" />
     <Compile Include="DeterministicGuid.cs" />
-    <Compile Include="Exceptions\Cant_convert_to_TransportMessage\SerializerCorrupter.cs" />
-    <Compile Include="Exceptions\Cant_convert_to_TransportMessage\When_cant_convert_to_TransportMessage_NoTransactions.cs" />
-    <Compile Include="Exceptions\Cant_convert_to_TransportMessage\When_cant_convert_to_TransportMessage_SuppressedDTC.cs" />
-    <Compile Include="Exceptions\When_handler_throws_serialization_exception.cs" />
-    <Compile Include="Exceptions\Message_without_an_id.cs" />
-    <Compile Include="HostInformation\When_customising_hostinfo.cs" />
+    <Compile Include="Exceptions\TransportMessage\SerializerCorrupter.cs" />
+    <Compile Include="Exceptions\TransportMessage\Cant_convert_NoTransactions.cs" />
+    <Compile Include="Exceptions\TransportMessage\Cant_convert_SuppressedDTC.cs" />
+    <Compile Include="Exceptions\Handler_throws_SerializationEx.cs" />
+    <Compile Include="MessageId\When_message_has_no_id_header.cs" />
     <Compile Include="HostInformation\When_feature_overrides_hostinfo.cs" />
     <Compile Include="Sagas\When_reply_from_a_finder.cs" />
-    <Compile Include="Exceptions\Cant_convert_to_TransportMessage\When_cant_convert_to_TransportMessage.cs" />
+    <Compile Include="Exceptions\TransportMessage\Cant_convert.cs" />
     <Compile Include="Sagas\When_message_has_a_saga_id.cs" />
     <Compile Include="Retries\When_Subscribing_to_errors.cs" />
     <Compile Include="Sagas\When_timeout_hit_not_found_saga.cs" />
@@ -113,34 +131,35 @@
     <Compile Include="ScenarioDescriptors\AllTransactionSettings.cs" />
     <Compile Include="ScenarioDescriptors\TransactionSettings.cs" />
     <Compile Include="Tx\Issue_2481.cs" />
+    <Compile Include="Tx\When_receiving_with_native_multi_queue_transaction.cs" />
+    <Compile Include="UnitOfWork\When_a_subscription_message_arrives.cs" />
     <Compile Include="Volatile\When_sending_to_non_durable_endpoint.cs" />
     <Compile Include="Encryption\When_using_Rijndael_with_multikey.cs" />
     <Compile Include="Encryption\When_using_Rijndael_with_custom.cs" />
     <Compile Include="Encryption\When_using_Rijndael_with_config.cs" />
     <Compile Include="EndpointTemplates\DefaultPublisher.cs" />
     <Compile Include="Exceptions\StackTraceAssert.cs" />
-    <Compile Include="Exceptions\When_handler_and_Uow_End_throws.cs">
+    <Compile Include="Exceptions\Handler_and_UowEnd_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_handler_throws.cs">
+    <Compile Include="Exceptions\Handler_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_handler_throws_AggregateException.cs">
+    <Compile Include="Exceptions\Handler_throws_AggregateEx.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_serialization_throws.cs">
+    <Compile Include="Exceptions\Serialization_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_Uow_Begin_and_different_End_throws.cs">
+    <Compile Include="Exceptions\Uow_Begin_and_diff_End_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_Uow_Begin_throws.cs">
+    <Compile Include="Exceptions\Uow_Begin_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Exceptions\When_Uow_End_throws.cs">
+    <Compile Include="Exceptions\Uow_End_throws.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="HostInformation\When_a_message_is_received.cs" />
     <Compile Include="Mutators\Issue_1980.cs" />
     <Compile Include="Mutators\When_outgoing_mutator_replaces_instance.cs" />
     <Compile Include="Mutators\When_defining_outgoing_message_mutators.cs" />
@@ -174,7 +193,6 @@
     <Compile Include="NServiceBusAcceptanceTest.cs" />
     <Compile Include="DataBus\When_sending_databus_properties.cs" />
     <Compile Include="EndpointTemplates\ConfigureExtensions.cs" />
-    <Compile Include="PipelineExt\SkipDeserialization.cs" />
     <Compile Include="PubSub\SubscriptionBehavior.cs" />
     <Compile Include="PubSub\When_multi_subscribing_to_a_polymorphic_event.cs" />
     <Compile Include="PubSub\When_publishing_with_overridden_local_address.cs" />
@@ -183,8 +201,8 @@
     <Compile Include="PubSub\When_base_event_from_2_publishers.cs" />
     <Compile Include="PubSub\When_subscribing_to_a_polymorphic_event.cs" />
     <Compile Include="PubSub\When_publishing_on_brokers.cs" />
-    <Compile Include="PubSub\When_publishin.cs" />
-    <Compile Include="Retries\When_sending_to_slr.cs" />
+    <Compile Include="PubSub\When_publishing.cs" />
+    <Compile Include="Retries\When_performing_slr.cs" />
     <Compile Include="Retries\When_fails_flr.cs" />
     <Compile Include="Retries\When_fails_with_retries_set_to_0.cs" />
     <Compile Include="Retries\When_doing_flr_with_default_settings.cs" />
@@ -233,15 +251,15 @@
       <Project>{758357f6-cd31-4337-80c4-ba377fc257af}</Project>
       <Name>NServiceBus.AcceptanceTesting</Name>
     </ProjectReference>
-  </ItemGroup>  
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets'))" />
     <Error Condition="!Exists('..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets'))" />
+    <Error Condition="!Exists('..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets'))" />
   </Target>
-  <Import Project="..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets" Condition="Exists('..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets')" />
   <Import Project="..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets')" />
+  <Import Project="..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets" Condition="Exists('..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets')" />
 </Project>

@@ -34,29 +34,6 @@ namespace NServiceBus
         void Unsubscribe<T>();
 
         /// <summary>
-        /// Sends the message back to the current bus.
-        /// </summary>
-        /// <param name="message">The message to send.</param>
-        ICallback SendLocal(object message);
-
-        /// <summary>
-        /// Instantiates a message of type T and sends it back to the current bus.
-        /// </summary>
-        /// <typeparam name="T">The type of message, usually an interface.</typeparam>
-        /// <param name="messageConstructor">An action which initializes properties of the message</param>
-        ICallback SendLocal<T>(Action<T> messageConstructor);
-
-        /// <summary>
-        /// Defers the processing of the message for the given delay. This feature is using the timeout manager so make sure that you enable timeouts
-        /// </summary>
-        ICallback Defer(TimeSpan delay, object message);
-
-        /// <summary>
-        /// Defers the processing of the message until the specified time. This feature is using the timeout manager so make sure that you enable timeouts
-        /// </summary>
-        ICallback Defer(DateTime processAt, object message);
-
-        /// <summary>
         /// Sends the message to the endpoint which sent the message currently being handled on this thread.
         /// </summary>
         /// <param name="message">The message to send.</param>
@@ -74,6 +51,37 @@ namespace NServiceBus
         /// of the message being handled. The type T can only be an enum or an integer.
         /// </summary>
         void Return<T>(T errorEnum);
+
+        /// <summary>
+        /// Sends the message back to the current bus.
+        /// </summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="options">The options for the send.</param>
+        ICallback SendLocal(object message, SendLocalOptions options);
+
+        /// <summary>
+        /// Instantiates a message of type T and sends it back to the current bus.
+        /// </summary>
+        /// <typeparam name="T">The type of message, usually an interface.</typeparam>
+        /// <param name="messageConstructor">An action which initializes properties of the message</param>
+        /// <param name="options">The options for the send.</param>
+        ICallback SendLocal<T>(Action<T> messageConstructor, SendLocalOptions options);
+
+        /// <summary>
+        /// Defers the processing of the message for the given delay. This feature is using the timeout manager so make sure that you enable timeouts
+        /// </summary>
+        [ObsoleteEx(RemoveInVersion = "7.0", TreatAsErrorFromVersion = "6.0", ReplacementTypeOrMember = "SendLocal(object message, SendLocalOptions options)")]
+        // ReSharper disable UnusedParameter.Global
+        ICallback Defer(TimeSpan delay, object message);
+        // ReSharper restore UnusedParameter.Global
+
+        /// <summary>
+        /// Defers the processing of the message until the specified time. This feature is using the timeout manager so make sure that you enable timeouts
+        /// </summary>
+        [ObsoleteEx(RemoveInVersion = "7.0", TreatAsErrorFromVersion = "6.0", ReplacementTypeOrMember = "SendLocal(object message, SendLocalOptions options)")]
+        // ReSharper disable UnusedParameter.Global
+        ICallback Defer(DateTime processAt, object message);
+        // ReSharper restore UnusedParameter.Global
 
         /// <summary>
         /// Moves the message being handled to the back of the list of available 
@@ -98,11 +106,5 @@ namespace NServiceBus
         /// of the message currently being handled on this thread.
         /// </summary>
         IMessageContext CurrentMessageContext { get; }
-
-        /// <summary>
-        /// Support for in-memory operations.
-        /// </summary>
-        [ObsoleteEx(RemoveInVersion = "6", TreatAsErrorFromVersion = "5.5", Message = "Removed to reduce complexity and API confusion.")]
-        IInMemoryOperations InMemory { get; }
     }
 }

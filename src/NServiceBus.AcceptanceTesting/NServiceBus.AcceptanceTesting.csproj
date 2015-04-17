@@ -15,7 +15,7 @@
     <TargetFrameworkProfile />
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <NuGetPackageImportStamp>ba4aa232</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>8f2dda8b</NuGetPackageImportStamp>
     <CreateDeploymentPackage>False</CreateDeploymentPackage>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,8 +26,9 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
+    <NoWarn>436</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,6 +39,7 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Prefer32Bit>false</Prefer32Bit>
+    <NoWarn>436</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -47,6 +49,7 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Customization\BusConfigExtensions.cs" />
     <Compile Include="Customization\Conventions.cs" />
     <Compile Include="IScenarioVerification.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -88,9 +91,9 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets'))" />
     <Error Condition="!Exists('..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets'))" />
+    <Error Condition="!Exists('..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets'))" />
   </Target>
-  <Import Project="..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets" Condition="Exists('..\packages\NuGetPackager.0.4.10\build\NuGetPackager.targets')" />
   <Import Project="..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets" Condition="Exists('..\packages\GitVersionTask.2.0.1\Build\GitVersionTask.targets')" />
+  <Import Project="..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets" Condition="Exists('..\packages\NuGetPackager.0.5.4\build\NuGetPackager.targets')" />
 </Project>

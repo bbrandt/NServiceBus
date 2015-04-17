@@ -5,7 +5,7 @@ namespace NServiceBus
     /// <summary>
     /// Provides configuration options to tune handler ordering
     /// </summary>
-    public static partial class LoadMessageHandlersExtentions
+    public static class LoadMessageHandlersExtentions
     {
         /// <summary>
         ///     Loads all message handler assemblies in the runtime directory
@@ -15,6 +15,7 @@ namespace NServiceBus
         /// </summary>
         public static void LoadMessageHandlers<TFirst>(this BusConfiguration config)
         {
+            Guard.AgainstNull(config, "config");
             var args = typeof(TFirst).GetGenericArguments();
             if (args.Length == 1)
             {
@@ -35,6 +36,8 @@ namespace NServiceBus
         /// </summary>
         public static void LoadMessageHandlers<T>(this BusConfiguration config, First<T> order)
         {
+            Guard.AgainstNull(config, "config");
+            Guard.AgainstNull(order, "order");
             config.Settings.Set("LoadMessageHandlers.Order.Types", order.Types);
         }
     }

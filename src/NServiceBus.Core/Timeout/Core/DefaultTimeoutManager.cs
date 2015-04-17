@@ -1,15 +1,13 @@
 namespace NServiceBus.Timeout.Core
 {
     using System;
-    using Transports;
+    using NServiceBus.Transports;
 
     class DefaultTimeoutManager
     {
         public IPersistTimeouts TimeoutsPersister { get; set; }
-       
-        public ISendMessages MessageSender { get; set; }
 
-        public Configure Configure { get; set; }
+        public ISendMessages MessageSender { get; set; }
 
         public Action<TimeoutData> TimeoutPushed;
 
@@ -17,9 +15,13 @@ namespace NServiceBus.Timeout.Core
         {
             if (timeout.Time.AddSeconds(-1) <= DateTime.UtcNow)
             {
-                MessageSender.Send(timeout.ToTransportMessage(), timeout.ToSendOptions(Configure.LocalAddress));
+                var sendOptions = new TransportSendOptions(timeout.Destination);
+                var message = new OutgoingMessage(timeout.Headers[Headers.MessageId],timeout.Headers, timeout.State);
+
+                MessageSender.Send(message, sendOptions);
                 return;
             }
+
 
             TimeoutsPersister.Add(timeout);
 

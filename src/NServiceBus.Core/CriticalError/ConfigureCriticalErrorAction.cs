@@ -6,7 +6,7 @@ namespace NServiceBus
     /// <summary>
     ///     Allow override critical error action
     /// </summary>
-    public static partial class ConfigureCriticalErrorAction
+    public static class ConfigureCriticalErrorAction
     {
 
         /// <summary>
@@ -16,6 +16,8 @@ namespace NServiceBus
         /// <param name="onCriticalError">Assigns the action to perform on critical error.</param>
         public static void DefineCriticalErrorAction(this BusConfiguration busConfiguration, Action<string, Exception> onCriticalError)
         {
+            Guard.AgainstNull(busConfiguration, "busConfiguration");
+            Guard.AgainstNull(onCriticalError, "onCriticalError");
             busConfiguration.Settings.Set("onCriticalErrorAction", onCriticalError);
         }
 

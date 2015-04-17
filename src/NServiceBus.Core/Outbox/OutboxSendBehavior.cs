@@ -2,24 +2,24 @@ namespace NServiceBus
 {
     using System;
     using NServiceBus.Outbox;
-    using Pipeline;
+    using NServiceBus.Transports;
     using Pipeline.Contexts;
 
-    class OutboxSendBehavior : IBehavior<OutgoingContext>
+    class OutboxSendBehavior : PhysicalOutgoingContextStageBehavior
     {
         public DispatchMessageToTransportBehavior DispatchMessageToTransportBehavior { get; set; }
 
-        public void Invoke(OutgoingContext context, Action next)
+        public override void Invoke(Context context, Action next)
         {
             OutboxMessage currentOutboxMessage;
 
             if (context.TryGet(out currentOutboxMessage))
             {
-                currentOutboxMessage.TransportOperations.Add( new TransportOperation(context.OutgoingMessage.Id, context.DeliveryOptions.ToTransportOperationOptions(), context.OutgoingMessage.Body, context.OutgoingMessage.Headers)); 
+                currentOutboxMessage.TransportOperations.Add( new TransportOperation(context.MessageId, context.DeliveryMessageOptions.ToTransportOperationOptions(), context.Body, context.Headers)); 
             }
             else
             {
-                DispatchMessageToTransportBehavior.InvokeNative(context.DeliveryOptions, context.OutgoingMessage);
+                DispatchMessageToTransportBehavior.InvokeNative(context.DeliveryMessageOptions, new OutgoingMessage(context.MessageId,context.Headers,context.Body));
 
                 next();
             }

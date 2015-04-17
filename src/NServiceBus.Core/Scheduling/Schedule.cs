@@ -10,7 +10,7 @@ namespace NServiceBus
     /// Scheduling capability to schedule a task (as an <see cref="System.Action"/>) to be executed repeatedly in a given interval.
     /// </summary>
     /// <remarks>This is a in-memory list of <see cref="System.Action"/>s.</remarks>
-    public partial class Schedule
+    public class Schedule
     {
         IBuilder builder;
 
@@ -20,6 +20,7 @@ namespace NServiceBus
         /// <param name="builder">The <see cref="IBuilder"/>.</param>
         public Schedule(IBuilder builder)
         {
+            Guard.AgainstNull(builder, "builder");
             this.builder = builder;
         }
 
@@ -30,6 +31,8 @@ namespace NServiceBus
         /// <param name="task">The <see cref="System.Action"/> to execute.</param>
         public void Every(TimeSpan timeSpan, Action task)
         {
+            Guard.AgainstNull(task, "task");
+            Guard.AgainstNegativeAndZero(timeSpan, "timeSpan");
             var declaringType = task.Method.DeclaringType;
 
             while (declaringType.DeclaringType != null &&
@@ -49,6 +52,9 @@ namespace NServiceBus
         /// <param name="name">The name to use used for logging inside the new <see cref="Thread"/>.</param>
         public void Every(TimeSpan timeSpan, string name, Action task)
         {
+            Guard.AgainstNull(task, "task");
+            Guard.AgainstNullAndEmpty(name, "name");
+            Guard.AgainstNegativeAndZero(timeSpan, "timeSpan");
             builder.Build<DefaultScheduler>()
                 .Schedule(new TaskDefinition
                 {

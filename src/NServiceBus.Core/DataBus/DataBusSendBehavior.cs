@@ -4,11 +4,10 @@
     using System.IO;
     using System.Transactions;
     using NServiceBus.DataBus;
-    using Pipeline;
-    using Pipeline.Contexts;
-    using Unicast.Transport;
+    using NServiceBus.Pipeline;
+    using NServiceBus.Pipeline.Contexts;
 
-    class DataBusSendBehavior : IBehavior<OutgoingContext>
+    class DataBusSendBehavior : Behavior<OutgoingContext>
     {
         public IDataBus DataBus { get; set; }
 
@@ -16,9 +15,9 @@
 
         public Conventions Conventions { get; set; }
 
-        public void Invoke(OutgoingContext context, Action next)
+        public override void Invoke(OutgoingContext context, Action next)
         {
-            if (context.OutgoingLogicalMessage.IsControlMessage())
+            if (context.IsControlMessage())
             {
                 next();
                 return;
@@ -68,7 +67,7 @@
                     }
 
                     //we use the headers to in order to allow the infrastructure (eg. the gateway) to modify the actual key
-                    context.OutgoingLogicalMessage.Headers["NServiceBus.DataBus." + headerKey] = headerValue;
+                    context.Headers["NServiceBus.DataBus." + headerKey] = headerValue;
                 }
             }
 
@@ -80,7 +79,6 @@
             public Registration(): base("DataBusSend", typeof(DataBusSendBehavior), "Saves the payload into the shared location")
             {
                 InsertAfter(WellKnownStep.MutateOutgoingMessages);
-                InsertBefore(WellKnownStep.CreatePhysicalMessage);
             }
         }
     }

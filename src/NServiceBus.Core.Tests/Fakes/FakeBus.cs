@@ -4,10 +4,36 @@
     using System.Collections.Generic;
     using System.Threading;
 
-    public class FakeBus : IBus 
+    public class FakeBus : IBus
     {
+        DateTime _deferProcessAt = DateTime.MinValue;
+        int _deferWasCalled;
+        TimeSpan deferDelay = TimeSpan.MinValue;
 
-        public void Publish<T>(T message)
+        public int DeferWasCalled
+        {
+            get { return _deferWasCalled; }
+            set { _deferWasCalled = value; }
+        }
+
+        public TimeSpan DeferDelay
+        {
+            get { return deferDelay; }
+        }
+
+        public object DeferedMessage { get; set; }
+
+        public DateTime DeferProcessAt
+        {
+            get { return _deferProcessAt; }
+        }
+
+        public IDictionary<string, string> OutgoingHeaders
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public void Publish(object message)
         {
             throw new NotImplementedException();
         }
@@ -42,41 +68,23 @@
             throw new NotImplementedException();
         }
 
-        public ICallback SendLocal(object message)
+        public ICallback Send(object message, SendOptions options)
+        {
+            return null;
+        }
+
+        public ICallback Send<T>(Action<T> messageConstructor, SendOptions options)
         {
             throw new NotImplementedException();
         }
 
-        public ICallback SendLocal<T>(Action<T> messageConstructor)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ICallback Send(object message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ICallback Send<T>(Action<T> messageConstructor)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ICallback Send(string destination, object message)
-        {
-            throw new NotImplementedException();
-        }
-
+        [Obsolete("", true)]
         public ICallback Send(Address address, object message)
         {
             throw new NotImplementedException();
         }
 
-        public ICallback Send<T>(string destination, Action<T> messageConstructor)
-        {
-            throw new NotImplementedException();
-        }
-
+        [Obsolete("", true)]
         public ICallback Send<T>(Address address, Action<T> messageConstructor)
         {
             throw new NotImplementedException();
@@ -87,6 +95,7 @@
             throw new NotImplementedException();
         }
 
+        [Obsolete("", true)]
         public ICallback Send(Address address, string correlationId, object message)
         {
             throw new NotImplementedException();
@@ -97,52 +106,36 @@
             throw new NotImplementedException();
         }
 
+
+        [Obsolete("", true)]
         public ICallback Send<T>(Address address, string correlationId, Action<T> messageConstructor)
         {
             throw new NotImplementedException();
         }
 
-        public ICallback SendToSites(IEnumerable<string> siteKeys, object message)
+        public ICallback SendLocal(object message, SendLocalOptions options)
+        {
+            if (options.Delay.HasValue)
+            {
+                Interlocked.Increment(ref _deferWasCalled);
+                deferDelay = options.Delay.Value;
+                DeferedMessage = message;
+            }
+            return null;
+        }
+
+        public ICallback SendLocal<T>(Action<T> messageConstructor, SendLocalOptions options)
         {
             throw new NotImplementedException();
         }
 
+        [Obsolete("", true)]
         public ICallback Defer(TimeSpan delay, object message)
         {
-            return Defer(delay,new []{message});
+            throw new NotImplementedException();
         }
 
-        public ICallback Defer(TimeSpan delay, params object[] messages)
-        {
-            Interlocked.Increment(ref _deferWasCalled);
-            _deferDelay = delay;
-            _deferMessages = messages;
-            return null;
-        }
-
-        private int _deferWasCalled;
-        public int DeferWasCalled
-        {
-            get { return _deferWasCalled; }
-            set { _deferWasCalled = value; }
-        }
-        private TimeSpan _deferDelay = TimeSpan.MinValue;
-        public TimeSpan DeferDelay
-        {
-            get { return _deferDelay; }
-        }
-        private object[] _deferMessages;
-        public object[] DeferMessages
-        {
-            get { return _deferMessages; }
-        }
-
-        private DateTime _deferProcessAt = DateTime.MinValue;
-        public DateTime DeferProcessAt
-        {
-            get { return _deferProcessAt; }
-        }
-
+        [Obsolete("", true)]
         public ICallback Defer(DateTime processAt, object message)
         {
             throw new NotImplementedException();
@@ -178,24 +171,13 @@
             throw new NotImplementedException();
         }
 
-        public IDictionary<string, string> OutgoingHeaders
-        {
-            get { throw new NotImplementedException(); }
-        }
-
         public IMessageContext CurrentMessageContext
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public IInMemoryOperations InMemory
         {
             get { throw new NotImplementedException(); }
         }
 
         public void Dispose()
         {
-            
         }
     }
 }

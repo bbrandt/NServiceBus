@@ -7,14 +7,11 @@ namespace NServiceBus.Pipeline
     {
         public static void ThrowIfInvalid(Type behavior, string paramName)
         {
-            if (behavior == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-            if (behavior.IsAbstract)
-            {
-                throw new ArgumentException(string.Format("The behavior '{0}' is invalid since it is abstract.", behavior.Name), paramName);
-            }
+            Guard.AgainstNull(behavior, "behavior");
+            //if (behavior.IsAbstract)
+            //{
+            //    throw new ArgumentException(string.Format("The behavior '{0}' is invalid since it is abstract.", behavior.Name), paramName);
+            //}
             if (behavior.IsGenericTypeDefinition)
             {
                 throw new ArgumentException(string.Format("The behavior '{0}' is invalid since it is an open generic.", behavior.Name), paramName);
@@ -25,7 +22,7 @@ namespace NServiceBus.Pipeline
             }
         }
 
-        static Type iBehaviorType = typeof(IBehavior<>);
+        static Type iBehaviorType = typeof(IBehavior<,>);
 
         static bool IsAssignableToIBehavior(Type givenType)
         {

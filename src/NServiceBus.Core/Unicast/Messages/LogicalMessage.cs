@@ -1,8 +1,6 @@
 ﻿namespace NServiceBus.Unicast.Messages
 {
     using System;
-    using System.Collections.Generic;
-
 
     /// <summary>
     /// The logical message.
@@ -11,19 +9,11 @@
     {
         readonly LogicalMessageFactory factory;
 
-        internal LogicalMessage(Dictionary<string, string> headers, LogicalMessageFactory factory)
-        {
-            this.factory = factory;
-            Metadata = new MessageMetadata();
-            Headers = headers;
-        }
-
-        internal LogicalMessage(MessageMetadata metadata, object message, Dictionary<string, string> headers, LogicalMessageFactory factory)
+        internal LogicalMessage(MessageMetadata metadata, object message,LogicalMessageFactory factory)
         {
             this.factory = factory;
             Instance = message;
             Metadata = metadata;
-            Headers = headers;
         }
 
         /// <summary>
@@ -32,6 +22,7 @@
         /// <param name="newInstance">The new instance.</param>
         public void UpdateMessageInstance(object newInstance)
         {
+            Guard.AgainstNull(newInstance, "newInstance");
             var sameInstance = ReferenceEquals(Instance, newInstance);
             
             Instance = newInstance;
@@ -57,11 +48,7 @@
             }
         }
 
-        /// <summary>
-        ///     Gets other applicative out-of-band information.
-        /// </summary>
-        public Dictionary<string, string> Headers { get; private set; }
-
+        
         /// <summary>
         /// Message metadata.
         /// </summary>
@@ -71,5 +58,15 @@
         /// The message instance.
         /// </summary>
         public object Instance { get; private set; }
+    }
+
+    class ControlMessage : LogicalMessage
+    {
+        internal ControlMessage(string purpose) : base(null, null, null)
+        {
+            Purpose = purpose;
+        }
+
+        public string Purpose { get; private set; }
     }
 }

@@ -1,28 +1,23 @@
 ﻿namespace NServiceBus
 {
     using System;
-    using NServiceBus.Unicast;
-    using Pipeline;
-    using Pipeline.Contexts;
-    using Transports;
+    using NServiceBus.Pipeline;
+    using NServiceBus.Transports;
 
-    class ForwardBehavior : IBehavior<IncomingContext>
+    class ForwardBehavior : PhysicalMessageProcessingStageBehavior
     {
         public IAuditMessages MessageAuditer { get; set; }
 
-        public Address ForwardReceivedMessagesTo { get; set; }
+        public string ForwardReceivedMessagesTo { get; set; }
 
-        public TimeSpan? TimeToBeReceivedOnForwardedMessages { get; set; }
 
-        public void Invoke(IncomingContext context, Action next)
+        public override void Invoke(Context context, Action next)
         {
             next();
 
-            MessageAuditer.Audit(new SendOptions(ForwardReceivedMessagesTo)
-            {
-                TimeToBeReceived = TimeToBeReceivedOnForwardedMessages
-            }, context.PhysicalMessage);
+            context.PhysicalMessage.RevertToOriginalBodyIfNeeded();
 
+            MessageAuditer.Audit(new OutgoingMessage(context.PhysicalMessage.Id,context.PhysicalMessage.Headers,context.PhysicalMessage.Body),new TransportSendOptions(ForwardReceivedMessagesTo));
         }
 
         public class Registration : RegisterStep

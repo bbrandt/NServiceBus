@@ -6,7 +6,7 @@
     using Pipeline;
     using Pipeline.Contexts;
 
-    class DataBusReceiveBehavior : IBehavior<IncomingContext>
+    class DataBusReceiveBehavior : LogicalMessageProcessingStageBehavior
     {
         public IDataBus DataBus { get; set; }
 
@@ -14,7 +14,7 @@
 
         public Conventions Conventions { get; set; }
 
-        public void Invoke(IncomingContext context, Action next)
+        public override void Invoke(Context context, Action next)
         {
             var message = context.IncomingLogicalMessage.Instance;
 
@@ -36,7 +36,7 @@
 
                 string dataBusKey;
 
-                if (!context.IncomingLogicalMessage.Headers.TryGetValue("NServiceBus.DataBus." + headerKey, out dataBusKey))
+                if (!context.Headers.TryGetValue("NServiceBus.DataBus." + headerKey, out dataBusKey))
                 {
                     continue;
                 }
@@ -65,7 +65,6 @@
             public Registration() : base("DataBusReceive", typeof(DataBusReceiveBehavior), "Copies the databus shared data back to the logical message")
             {
                 InsertAfter(WellKnownStep.MutateIncomingMessages);
-                InsertBefore(WellKnownStep.InvokeHandlers);
             }
         }
     }

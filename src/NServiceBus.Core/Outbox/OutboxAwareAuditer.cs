@@ -6,25 +6,26 @@ namespace NServiceBus.Outbox
 
     class OutboxAwareAuditer
     {
-        public DefaultMessageAuditer DefaultMessageAuditer { get; set; }
+        readonly DefaultMessageAuditer defaultMessageAuditer;
+        readonly BehaviorContext behaviorContext;
 
-        public PipelineExecutor PipelineExecutor { get; set; }
-
-        public void Audit( SendOptions sendOptions, TransportMessage message)
+        public OutboxAwareAuditer(DefaultMessageAuditer defaultMessageAuditer, BehaviorContext behaviorContext)
         {
-            var context = PipelineExecutor.CurrentContext;
+            this.defaultMessageAuditer = defaultMessageAuditer;
+            this.behaviorContext = behaviorContext;
+        }
 
+        public void Audit( SendMessageOptions sendMessageOptions, OutgoingMessage message)
+        {
             OutboxMessage currentOutboxMessage;
 
-            if (context.TryGet(out currentOutboxMessage))
-            {
-                message.RevertToOriginalBodyIfNeeded();
-                
-                currentOutboxMessage.TransportOperations.Add(new TransportOperation(message.Id, sendOptions.ToTransportOperationOptions(true), message.Body, message.Headers));
+            if (behaviorContext.TryGet(out currentOutboxMessage))
+            {    
+                currentOutboxMessage.TransportOperations.Add(new TransportOperation(message.MessageId, sendMessageOptions.ToTransportOperationOptions(true), message.Body, message.Headers));
             }
             else
             {
-                DefaultMessageAuditer.Audit(sendOptions, message);
+                defaultMessageAuditer.Audit(new TransportSendOptions(sendMessageOptions.Destination), message);
             }
         }
     }

@@ -14,11 +14,10 @@ namespace NServiceBus.Settings
         internal TransactionSettings(BusConfiguration config)
         {
             this.config = config;
-            maxTimeout = GetMaxTimeout();
         }
 
         /// <summary>
-        ///     Configures the <see cref="ITransport" /> not to not use any transactions.
+        ///     Configures the <see cref="TransportReceiver" /> not to not use any transactions.
         /// </summary>
         public TransactionSettings Disable()
         {
@@ -30,7 +29,7 @@ namespace NServiceBus.Settings
         }
 
         /// <summary>
-        ///     Configures the <see cref="ITransport" /> to use transactions.
+        ///     Configures the <see cref="TransportReceiver" /> to use transactions.
         /// </summary>
         public TransactionSettings Enable()
         {
@@ -56,7 +55,7 @@ namespace NServiceBus.Settings
         }
 
         /// <summary>
-        ///     Configures the <see cref="ITransport" /> not to enlist in Distributed Transactions.
+        ///     Configures the <see cref="TransportReceiver" /> not to enlist in Distributed Transactions.
         /// </summary>
         public TransactionSettings DisableDistributedTransactions()
         {
@@ -66,7 +65,7 @@ namespace NServiceBus.Settings
         }
 
         /// <summary>
-        ///     Configures the <see cref="ITransport" /> to enlist in Distributed Transactions.
+        ///     Configures the <see cref="TransportReceiver" /> to enlist in Distributed Transactions.
         /// </summary>
         public TransactionSettings EnableDistributedTransactions()
         {
@@ -103,6 +102,8 @@ namespace NServiceBus.Settings
         /// </param>
         public TransactionSettings DefaultTimeout(TimeSpan defaultTimeout)
         {
+            Guard.AgainstNegative(defaultTimeout, "defaultTimeout");
+            var maxTimeout = GetMaxTimeout();
             if (defaultTimeout > maxTimeout)
             {
                 throw new ConfigurationErrorsException(
@@ -135,6 +136,5 @@ namespace NServiceBus.Settings
         }
 
         BusConfiguration config;
-        TimeSpan maxTimeout;
     }
 }

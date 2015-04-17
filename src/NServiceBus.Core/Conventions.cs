@@ -15,8 +15,6 @@
         internal IEnumerable<DataBusPropertyInfo> GetDataBusProperties(object message)
         {
             var messageType = message.GetType();
-
-
             List<DataBusPropertyInfo> value;
 
             if (!cache.TryGetValue(messageType, out value))
@@ -41,6 +39,7 @@
         /// </summary>
         public TimeSpan GetTimeToBeReceived(Type messageType)
         {
+            Guard.AgainstNull(messageType, "messageType");
             return TimeToBeReceivedAction(messageType);
         }
 
@@ -49,11 +48,14 @@
         /// </summary>
         public bool IsMessageType(Type t)
         {
+            Guard.AgainstNull(t, "t");
             try
             {
                 return MessagesConventionCache.ApplyConvention(t,
-                    type =>
+                    typeHandle =>
                     {
+                        var type = Type.GetTypeFromHandle(typeHandle);
+
                         if (IsInSystemConventionList(type))
                         {
                             return true;
@@ -78,6 +80,7 @@
         /// </summary>
         public bool IsInSystemConventionList(Type t)
         {
+            Guard.AgainstNull(t, "t");
             return IsSystemMessageActions.Any(isSystemMessageAction => isSystemMessageAction(t));
         }
 
@@ -87,6 +90,7 @@
         /// <param name="definesMessageType">Function to define system message convention</param>
         public void AddSystemMessagesConventions(Func<Type, bool> definesMessageType)
         {
+            Guard.AgainstNull(definesMessageType, "definesMessageType");
             if (!IsSystemMessageActions.Contains(definesMessageType))
             {
                 IsSystemMessageActions.Add(definesMessageType);
@@ -99,10 +103,12 @@
         /// </summary>
         public bool IsCommandType(Type t)
         {
+            Guard.AgainstNull(t, "t");
             try
             {
-                return CommandsConventionCache.ApplyConvention(t, type =>
+                return CommandsConventionCache.ApplyConvention(t, typeHandle =>
                 {
+                    var type = Type.GetTypeFromHandle(typeHandle);
                     if (type.IsFromParticularAssembly())
                     {
                         return false;
@@ -121,10 +127,12 @@
         /// </summary>
         public bool IsExpressMessageType(Type t)
         {
+            Guard.AgainstNull(t, "t");
             try
             {
-                return ExpressConventionCache.ApplyConvention(t, type =>
+                return ExpressConventionCache.ApplyConvention(t, typeHandle =>
                 {
+                    var type = Type.GetTypeFromHandle(typeHandle);
                     if (type.IsFromParticularAssembly())
                     {
                         return false;
@@ -143,6 +151,7 @@
         /// </summary>
         public bool IsEncryptedProperty(PropertyInfo property)
         {
+            Guard.AgainstNull(property, "property");
             try
             {
                 //the message mutator will cache the whole message so we don't need to cache here
@@ -159,6 +168,7 @@
         /// </summary>
         public bool IsDataBusProperty(PropertyInfo property)
         {
+            Guard.AgainstNull(property, "property");
             try
             {
                 return IsDataBusPropertyAction(property);
@@ -174,10 +184,12 @@
         /// </summary>
         public bool IsEventType(Type t)
         {
+            Guard.AgainstNull(t, "t");
             try
             {
-                return EventsConventionCache.ApplyConvention(t, type =>
+                return EventsConventionCache.ApplyConvention(t, typeHandle =>
                 {
+                    var type = Type.GetTypeFromHandle(typeHandle);
                     if (type.IsFromParticularAssembly())
                     {
                         return false;
@@ -227,9 +239,9 @@
 
         class ConventionCache
         {
-            public bool ApplyConvention(Type type, Func<Type, bool> action)
+            public bool ApplyConvention(Type type, Func<RuntimeTypeHandle, bool> action)
             {
-                return cache.GetOrAdd(type, action);
+                return cache.GetOrAdd(type.TypeHandle, action);
             }
 
             public void Reset()
@@ -237,7 +249,7 @@
                 cache.Clear();
             }
 
-            ConcurrentDictionary<Type, bool> cache = new ConcurrentDictionary<Type, bool>();
+            ConcurrentDictionary<RuntimeTypeHandle, bool> cache = new ConcurrentDictionary<RuntimeTypeHandle, bool>();
         }
     }
 }

@@ -2,6 +2,7 @@ namespace NServiceBus.Serializers.XML
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
@@ -121,27 +122,11 @@ namespace NServiceBus.Serializers.XML
 
             foreach (var p in props)
             {
-                logger.Debug("Handling property: " + p.Name);
-
-                DelegateFactory.CreateGet(p);
-                if (!isKeyValuePair)
-                {
-                    DelegateFactory.CreateSet(p);
-                }
-
                 InitType(p.PropertyType);
             }
 
             foreach (var f in fields)
             {
-                logger.Debug("Handling field: " + f.Name);
-
-                DelegateFactory.CreateGet(f);
-                if (!isKeyValuePair)
-                {
-                    DelegateFactory.CreateSet(f);
-                }
-
                 InitType(f.FieldType);
             }
         }
@@ -213,11 +198,11 @@ namespace NServiceBus.Serializers.XML
             return t.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.Public);
         }
 
-        public readonly Dictionary<Type, IEnumerable<FieldInfo>> typeToFields = new Dictionary<Type, IEnumerable<FieldInfo>>();
-        public readonly Dictionary<Type, IEnumerable<PropertyInfo>> typeToProperties = new Dictionary<Type, IEnumerable<PropertyInfo>>();
+        public readonly ConcurrentDictionary<Type, IEnumerable<FieldInfo>> typeToFields = new ConcurrentDictionary<Type, IEnumerable<FieldInfo>>();
+        public readonly ConcurrentDictionary<Type, IEnumerable<PropertyInfo>> typeToProperties = new ConcurrentDictionary<Type, IEnumerable<PropertyInfo>>();
         readonly List<Type> typesBeingInitialized = new List<Type>();
-        public readonly Dictionary<Type, Type> typesToCreateForArrays = new Dictionary<Type, Type>();
-        public readonly Dictionary<Type, Type> typesToCreateForEnumerables = new Dictionary<Type, Type>();
+        public readonly ConcurrentDictionary<Type, Type> typesToCreateForArrays = new ConcurrentDictionary<Type, Type>();
+        public readonly ConcurrentDictionary<Type, Type> typesToCreateForEnumerables = new ConcurrentDictionary<Type, Type>();
 
         static ILog logger = LogManager.GetLogger<XmlSerializerCache>();
     }

@@ -9,12 +9,12 @@ namespace NServiceBus.Saga
     /// To signify that the receipt of a message should start this saga,
     /// implement <see cref="IAmStartedByMessages{T}"/> for the relevant message type.
     /// </summary>
-    public abstract class Saga 
+    public abstract class Saga
     {
         /// <summary>
         /// The saga's typed data.
         /// </summary>
-        public IContainSagaData Entity{get; set; }
+        public IContainSagaData Entity { get; set; }
 
         /// <summary>
         /// Override this method in order to configure how this saga's data should be found.
@@ -61,14 +61,12 @@ namespace NServiceBus.Saga
         /// <param name="action">Callback to execute after <paramref name="at"/> is reached.</param>
         [ObsoleteEx(
             Message = "Construct your message and pass it to the non Action overload.",
-            RemoveInVersion = "6.0",
+            RemoveInVersion = "7.0",
             TreatAsErrorFromVersion = "6.0",
-            Replacement = "Saga.RequestTimeout<TTimeoutMessageType>(DateTime, TTimeoutMessageType)")]
+            ReplacementTypeOrMember = "Saga.RequestTimeout<TTimeoutMessageType>(DateTime, TTimeoutMessageType)")]
         protected void RequestTimeout<TTimeoutMessageType>(DateTime at, Action<TTimeoutMessageType> action) where TTimeoutMessageType : new()
         {
-            var instance = new TTimeoutMessageType();
-            action(instance);
-            RequestTimeout(at, instance);
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -76,7 +74,7 @@ namespace NServiceBus.Saga
         /// </summary>
         /// <param name="at"><see cref="DateTime"/> to send timeout <paramref name="timeoutMessage"/>.</param>
         /// <param name="timeoutMessage">The message to send after <paramref name="at"/> is reached.</param>
-        protected void RequestTimeout<TTimeoutMessageType>(DateTime at, TTimeoutMessageType timeoutMessage) 
+        protected void RequestTimeout<TTimeoutMessageType>(DateTime at, TTimeoutMessageType timeoutMessage)
         {
             if (at.Kind == DateTimeKind.Unspecified)
             {
@@ -84,12 +82,15 @@ namespace NServiceBus.Saga
             }
 
             VerifySagaCanHandleTimeout(timeoutMessage);
-            SetTimeoutHeaders(timeoutMessage);
 
-            Bus.Defer(at, timeoutMessage);
+            var context = new SendLocalOptions(deliverAt: at);
+
+            SetTimeoutHeaders(context);
+
+            Bus.SendLocal(timeoutMessage, context);
         }
 
-        void VerifySagaCanHandleTimeout<TTimeoutMessageType>(TTimeoutMessageType timeoutMessage) 
+        void VerifySagaCanHandleTimeout<TTimeoutMessageType>(TTimeoutMessageType timeoutMessage)
         {
             var canHandleTimeoutMessage = this is IHandleTimeouts<TTimeoutMessageType>;
             if (!canHandleTimeoutMessage)
@@ -115,14 +116,12 @@ namespace NServiceBus.Saga
         /// <param name="messageConstructor">An <see cref="Action"/> which initializes properties of the message that is sent after <paramref name="within"/> expires.</param>
         [ObsoleteEx(
             Message = "Construct your message and pass it to the non Action overload.",
-            RemoveInVersion = "6.0",
+            RemoveInVersion = "7.0",
             TreatAsErrorFromVersion = "6.0",
-            Replacement = "Saga.RequestTimeout<TTimeoutMessageType>(TimeSpan, TTimeoutMessageType)")]
+            ReplacementTypeOrMember = "Saga.RequestTimeout<TTimeoutMessageType>(TimeSpan, TTimeoutMessageType)")]
         protected void RequestTimeout<TTimeoutMessageType>(TimeSpan within, Action<TTimeoutMessageType> messageConstructor) where TTimeoutMessageType : new()
         {
-            var instance = new TTimeoutMessageType();
-            messageConstructor(instance);
-            RequestTimeout(within, instance);
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -130,20 +129,22 @@ namespace NServiceBus.Saga
         /// </summary>
         /// <param name="within">Given <see cref="TimeSpan"/> to delay timeout message by.</param>
         /// <param name="timeoutMessage">The message to send after <paramref name="within"/> expires.</param>
-        protected void RequestTimeout<TTimeoutMessageType>(TimeSpan within, TTimeoutMessageType timeoutMessage) 
+        protected void RequestTimeout<TTimeoutMessageType>(TimeSpan within, TTimeoutMessageType timeoutMessage)
         {
             VerifySagaCanHandleTimeout(timeoutMessage);
-            SetTimeoutHeaders(timeoutMessage);
 
-            Bus.Defer(within, timeoutMessage);
+            var context = new SendLocalOptions(delayDeliveryFor: within);
+
+            SetTimeoutHeaders(context);
+
+            Bus.SendLocal(timeoutMessage, context);
         }
 
-
-        void SetTimeoutHeaders(object toSend)
+        void SetTimeoutHeaders(SendLocalOptions options)
         {
-            Bus.SetMessageHeader(toSend, Headers.SagaId, Entity.Id.ToString());
-            Bus.SetMessageHeader(toSend, Headers.IsSagaTimeoutMessage, Boolean.TrueString);
-            Bus.SetMessageHeader(toSend, Headers.SagaType, GetType().AssemblyQualifiedName);
+            options.AddHeader(Headers.SagaId, Entity.Id.ToString());
+            options.AddHeader(Headers.IsSagaTimeoutMessage, bool.TrueString);
+            options.AddHeader(Headers.SagaType, GetType().AssemblyQualifiedName);
         }
 
         /// <summary>
@@ -155,7 +156,8 @@ namespace NServiceBus.Saga
             {
                 throw new Exception("Entity.Originator cannot be null. Perhaps the sender is a SendOnly endpoint.");
             }
-            Bus.Send(Entity.Originator, Entity.OriginalMessageId, message);
+
+            Bus.Send(message, new SendOptions(Entity.Originator, Entity.OriginalMessageId));
         }
 
         /// <summary>
@@ -166,14 +168,12 @@ namespace NServiceBus.Saga
         /// <param name="messageConstructor">An <see cref="Action"/> which initializes properties of the message reply with.</param>
         [ObsoleteEx(
             Message = "Construct your message and pass it to the non Action overload.",
-            RemoveInVersion = "6.0",
+            RemoveInVersion = "7.0",
             TreatAsErrorFromVersion = "6.0",
-            Replacement = "Saga.ReplyToOriginator(object)")]
+            ReplacementTypeOrMember = "Saga.ReplyToOriginator(object)")]
         protected virtual void ReplyToOriginator<TMessage>(Action<TMessage> messageConstructor) where TMessage : new()
         {
-            var instance = new TMessage();
-            messageConstructor(instance);
-            ReplyToOriginator(instance);
+            throw new NotImplementedException();
         }
 
         /// <summary>

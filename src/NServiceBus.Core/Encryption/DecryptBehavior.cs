@@ -4,9 +4,8 @@ namespace NServiceBus
     using NServiceBus.Encryption;
     using NServiceBus.Pipeline;
     using NServiceBus.Pipeline.Contexts;
-    using NServiceBus.Unicast.Transport;
 
-    class DecryptBehavior : IBehavior<IncomingContext>
+    class DecryptBehavior : LogicalMessageProcessingStageBehavior
     {
         EncryptionMutator messageMutator;
 
@@ -14,9 +13,9 @@ namespace NServiceBus
         {
             this.messageMutator = messageMutator;
         }
-        public void Invoke(IncomingContext context, Action next)
+        public override void Invoke(Context context, Action next)
         {
-            if (context.IncomingLogicalMessage.IsControlMessage())
+            if (context.IsControlMessage())
             {
                 next();
                 return;
@@ -32,7 +31,6 @@ namespace NServiceBus
             public DecryptRegistration()
                 : base("InvokeDecryption", typeof(DecryptBehavior), "Invokes the decryption logic")
             {
-                InsertAfter(WellKnownStep.ExecuteLogicalMessages);
                 InsertBefore(WellKnownStep.MutateIncomingMessages);
             }
 

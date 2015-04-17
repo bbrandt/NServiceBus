@@ -1,7 +1,6 @@
-namespace NServiceBus.Sagas
+namespace NServiceBus.Saga
 {
     using System;
-    using Saga;
 
     /// <summary>
     /// Represents a saga instance being processed on the pipeline
@@ -9,6 +8,7 @@ namespace NServiceBus.Sagas
     public class ActiveSagaInstance
     {
         Guid sagaId;
+
         internal ActiveSagaInstance(Saga saga,SagaMetadata metadata)
         {
             Instance = saga;
@@ -23,7 +23,7 @@ namespace NServiceBus.Sagas
         /// <summary>
         /// The type of the saga
         /// </summary>
-        [ObsoleteEx(TreatAsErrorFromVersion = "6", RemoveInVersion = "7", Replacement = ".Metadata.SagaType")]
+        [ObsoleteEx(TreatAsErrorFromVersion = "6", RemoveInVersion = "7", ReplacementTypeOrMember = ".Metadata.SagaType")]
         public Type SagaType 
         {
             get { return Metadata.SagaType; }
@@ -37,7 +37,7 @@ namespace NServiceBus.Sagas
         /// <summary>
         /// The actual saga instance
         /// </summary>
-        [ObsoleteEx(TreatAsErrorFromVersion = "6", RemoveInVersion = "7", Replacement = "context.MessageHandler.Instance")]
+        [ObsoleteEx(TreatAsErrorFromVersion = "6", RemoveInVersion = "7", ReplacementTypeOrMember = "context.MessageHandler.Instance")]
         public Saga Instance { get; private set; }
         
         /// <summary>
@@ -56,6 +56,7 @@ namespace NServiceBus.Sagas
         /// <param name="sagaEntity">The new entity</param>
         public void AttachNewEntity(IContainSagaData sagaEntity)
         {
+            Guard.AgainstNull(sagaEntity, "sagaEntity");
             IsNew = true;
             AttachEntity(sagaEntity);
         }

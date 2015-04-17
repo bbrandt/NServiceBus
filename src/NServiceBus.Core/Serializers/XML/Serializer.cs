@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Text;
@@ -11,65 +12,44 @@
     using NServiceBus.MessageInterfaces;
     using NServiceBus.Utils.Reflection;
 
-    class Serializer
+    class Serializer:IDisposable
     {
-        const string BASETYPE = "baseType";
+        const string BaseType = "baseType";
 
-        string nameSpace = "http://tempuri.net";
-        List<Type> namespacesToAdd;
+        const string DefaultNamespace = "http://tempuri.net";
 
-        readonly IMessageMapper mapper;
-        readonly Conventions conventions;
-        readonly XmlSerializerCache cache;
+        List<Type> namespacesToAdd = new List<Type>();
+        IMessageMapper mapper;
+        StreamWriter writer;
+        object message;
+        Conventions conventions;
+        XmlSerializerCache cache;
+        bool skipWrappingRawXml;
+        string @namespace;
 
-        public Serializer(IMessageMapper mapper, Conventions conventions, XmlSerializerCache cache)
+        public Serializer(IMessageMapper mapper, Stream stream, object message, Conventions conventions, XmlSerializerCache cache, bool skipWrappingRawXml, string @namespace = DefaultNamespace)
         {
             this.mapper = mapper;
+            writer = new StreamWriter(stream, Encoding.UTF8, 1024,true);
+            this.message = message;
             this.conventions = conventions;
             this.cache = cache;
+            this.skipWrappingRawXml = skipWrappingRawXml;
+            this.@namespace = @namespace;
         }
 
-        public bool SkipWrappingRawXml { get; set; }
-
-        public string Namespace
+        public void Serialize()
         {
-            get { return nameSpace; }
-            set { nameSpace = TrimPotentialTrailingForwardSlashes(value); }
-        }
-
-        public byte[] Serialize(object message)
-        {
-            InitializeNamespaces(message);
-            var messageBuilder = SerializeMessage(message);
-
-            var builder = new StringBuilder();
-            builder.AppendLine("<?xml version=\"1.0\" ?>");
-
-            builder.Append(messageBuilder);
-            return Encoding.UTF8.GetBytes(builder.ToString());
-        }
-
-        string InitializeNamespaces(object message)
-        {
-            namespacesToAdd = new List<Type>();
-
-            return GetNamespace(message);
-        }
-
-        string GetNamespace(object message)
-        {
-            //TODO: if the proxy type has the same NS as the real message type we don't need to look this up
-            return mapper.GetMappedTypeFor(message.GetType()).Namespace;
-        }
-
-        StringBuilder SerializeMessage(object message)
-        {
-            var messageBuilder = new StringBuilder();
+            writer.WriteLine("<?xml version=\"1.0\" ?>");
             var t = mapper.GetMappedTypeFor(message.GetType());
 
-            WriteObject(t.SerializationFriendlyName(), t, message, messageBuilder, true);
+            WriteObject(t.SerializationFriendlyName(), t, message, true);
+            writer.Flush();
+        }
 
-            return messageBuilder;
+        string GetNamespace(object target)
+        {
+            return mapper.GetMappedTypeFor(target.GetType()).Namespace;
         }
 
         static string FormatAsString(object value)
@@ -144,7 +124,7 @@
             }
             if (value is string)
             {
-                return Escape(value as string);
+                return Escape((string) value);
             }
 
             return Escape(value.ToString());
@@ -314,7 +294,7 @@
             return result;
         }
 
-        void WriteObject(string name, Type type, object value, StringBuilder builder, bool useNS = false)
+        void WriteObject(string name, Type type, object value, bool useNS = false)
         {
             var element = name;
 
@@ -325,9 +305,7 @@
                     namespacesToAdd.Add(value.GetType());
                 }
 
-                builder.AppendFormat("<{0}>{1}</{0}>\n",
-                    value.GetType().Name.ToLower() + ":" + name,
-                    FormatAsString(value));
+                writer.Write("<{0}>{1}</{0}>\n", value.GetType().Name.ToLower() + ":" + name, FormatAsString(value));
 
                 return;
             }
@@ -335,21 +313,21 @@
 
             if (useNS)
             {
-                var @namespace = InitializeNamespaces(value);
+                var messageNamespace = GetNamespace(value);
                 var baseTypes = GetBaseTypes(value);
-                CreateStartElementWithNamespaces(@namespace, baseTypes, builder, element);
+                CreateStartElementWithNamespaces(messageNamespace, baseTypes, element);
             }
             else
             {
-                builder.AppendFormat("<{0}>\n", element);
+                writer.WriteLine("<{0}>", element);
             }
 
-            Write(builder, type, value);
+            Write(type, value);
 
-            builder.AppendFormat("</{0}>\n", element);
+            writer.WriteLine("</{0}>", element);
         }
 
-        void Write(StringBuilder builder, Type t, object obj)
+        void Write(Type t, object obj)
         {
             if (obj == null)
             {
@@ -359,7 +337,8 @@
             IEnumerable<PropertyInfo> properties;
             if (!cache.typeToProperties.TryGetValue(t, out properties))
             {
-                throw new InvalidOperationException(string.Format("Type {0} was not registered in the serializer. Check that it appears in the list of configured assemblies/types to scan.", t.FullName));
+                cache.InitType(t);
+                cache.typeToProperties.TryGetValue(t, out properties);
             }
 
             foreach (var prop in properties)
@@ -368,16 +347,16 @@
                 {
                     throw new NotSupportedException(string.Format("Type {0} contains an indexed property named {1}. Indexed properties are not supported on message types.", t.FullName, prop.Name));
                 }
-                WriteEntry(prop.Name, prop.PropertyType, DelegateFactory.CreateGet(prop).Invoke(obj), builder);
+                WriteEntry(prop.Name, prop.PropertyType, DelegateFactory.CreateGet(prop).Invoke(obj));
             }
 
             foreach (var field in cache.typeToFields[t])
             {
-                WriteEntry(field.Name, field.FieldType, DelegateFactory.CreateGet(field).Invoke(obj), builder);
+                WriteEntry(field.Name, field.FieldType, DelegateFactory.CreateGet(field).Invoke(obj));
             }
         }
 
-        void WriteEntry(string name, Type type, object value, StringBuilder builder)
+        void WriteEntry(string name, Type type, object value)
         {
             if (value == null)
             {
@@ -392,7 +371,7 @@
                     var nullableType = typeof(Nullable<>).MakeGenericType(args);
                     if (type == nullableType)
                     {
-                        WriteEntry(name, typeof(string), "null", builder);
+                        WriteEntry(name, typeof(string), "null");
                         return;
                     }
                 }
@@ -403,13 +382,13 @@
             if (typeof(XContainer).IsAssignableFrom(type))
             {
                 var container = (XContainer) value;
-                if (SkipWrappingRawXml)
+                if (skipWrappingRawXml)
                 {
-                    builder.AppendFormat("{0}\n", container);
+                    writer.WriteLine("{0}", container);
                 }
                 else
                 {
-                    builder.AppendFormat("<{0}>{1}</{0}>\n", name, container);
+                    writer.WriteLine("<{0}>{1}</{0}>", name, container);
                 }
 
                 return;
@@ -417,18 +396,18 @@
 
             if (type.IsValueType || type == typeof(string) || type == typeof(Uri) || type == typeof(char))
             {
-                builder.AppendFormat("<{0}>{1}</{0}>\n", name, FormatAsString(value));
+                writer.WriteLine("<{0}>{1}</{0}>", name, FormatAsString(value));
                 return;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
-                builder.AppendFormat("<{0}>\n", name);
+                writer.WriteLine("<{0}>", name);
 
                 if (type == typeof(byte[]))
                 {
                     var base64String = Convert.ToBase64String((byte[]) value);
-                    builder.Append(base64String);
+                    writer.Write(base64String);
                 }
                 else
                 {
@@ -464,20 +443,20 @@
                     {
                         if (obj != null && obj.GetType().IsSimpleType())
                         {
-                            WriteEntry(obj.GetType().Name, obj.GetType(), obj, builder);
+                            WriteEntry(obj.GetType().Name, obj.GetType(), obj);
                         }
                         else
                         {
-                            WriteObject(baseType.SerializationFriendlyName(), baseType, obj, builder);
+                            WriteObject(baseType.SerializationFriendlyName(), baseType, obj);
                         }
                     }
                 }
 
-                builder.AppendFormat("</{0}>\n", name);
+                writer.WriteLine("</{0}>", name);
                 return;
             }
 
-            WriteObject(name, type, value, builder);
+            WriteObject(name, type, value);
         }
 
         static bool IsIndexedProperty(PropertyInfo propertyInfo)
@@ -490,44 +469,36 @@
             return false;
         }
 
-        string TrimPotentialTrailingForwardSlashes(string value)
+        void CreateStartElementWithNamespaces(string messageNamespace, List<string> baseTypes, string element)
         {
-            if (value == null)
-            {
-                return null;
-            }
-
-            return value.TrimEnd(new[]
-            {
-                '/'
-            });
-        }
-
-        void CreateStartElementWithNamespaces(string messageNamespace, List<string> baseTypes, StringBuilder builder, string element)
-        {
-            builder.AppendFormat(
+            writer.Write(
                 "<{0} xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"",
                 element);
 
-            builder.AppendFormat(" xmlns=\"{0}/{1}\"", nameSpace, messageNamespace);
+            writer.Write(" xmlns=\"{0}/{1}\"", @namespace, messageNamespace);
 
             foreach (var t in namespacesToAdd)
             {
-                builder.AppendFormat(" xmlns:{0}=\"{1}\"", t.Name.ToLower(), t.Name);
+                writer.Write(" xmlns:{0}=\"{1}\"", t.Name.ToLower(), t.Name);
             }
 
             for (var i = 0; i < baseTypes.Count; i++)
             {
-                var prefix = BASETYPE;
+                var prefix = BaseType;
                 if (i != 0)
                 {
                     prefix += i;
                 }
 
-                builder.AppendFormat(" xmlns:{0}=\"{1}\"", prefix, baseTypes[i]);
+                writer.Write(" xmlns:{0}=\"{1}\"", prefix, baseTypes[i]);
             }
 
-            builder.Append(">\n");
+            writer.WriteLine(">");
+        }
+
+        public void Dispose()
+        {
+            //Injected at compile time   
         }
     }
 }

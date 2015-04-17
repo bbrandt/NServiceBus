@@ -3,12 +3,11 @@ namespace NServiceBus.Timeout.Hosting.Windows
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using CircuitBreakers;
-    using Core;
-    using Logging;
-    using Transports;
-    using Unicast;
-    using Unicast.Transport;
+    using NServiceBus.CircuitBreakers;
+    using NServiceBus.Logging;
+    using NServiceBus.Timeout.Core;
+    using NServiceBus.Transports;
+    using NServiceBus.Unicast.Transport;
 
     class TimeoutPersisterReceiver : IDisposable
     {
@@ -17,7 +16,7 @@ namespace NServiceBus.Timeout.Hosting.Windows
         public int SecondsToSleepBetweenPolls { get; set; }
         public DefaultTimeoutManager TimeoutManager { get; set; }
         public CriticalError CriticalError { get; set; }
-        public Address DispatcherAddress { get; set; }
+        public string DispatcherAddress { get; set; }
         public TimeSpan TimeToWaitBeforeTriggeringCriticalError { get; set; }
 
         public void Dispose()
@@ -93,8 +92,13 @@ namespace NServiceBus.Timeout.Hosting.Windows
                     {
                         startSlice = timeoutData.Item2;
                     }
+                  
 
-                    MessageSender.Send(CreateTransportMessage(timeoutData.Item1), new SendOptions(DispatcherAddress));
+                    var dispatchRequest = ControlMessageFactory.Create(MessageIntentEnum.Send);
+
+                    dispatchRequest.Headers["Timeout.Id"] = timeoutData.Item1;
+
+                    MessageSender.Send(dispatchRequest, new TransportSendOptions(DispatcherAddress));
                 }
 
                 lock (lockObject)
@@ -129,16 +133,6 @@ namespace NServiceBus.Timeout.Hosting.Windows
             resetEvent.Set();
         }
 
-        static TransportMessage CreateTransportMessage(string timeoutId)
-        {
-            //use the dispatcher as the reply to address so that retries go back to the dispatcher q
-            // instead of the main endpoint q
-            var transportMessage = ControlMessage.Create();
-
-            transportMessage.Headers["Timeout.Id"] = timeoutId;
-
-            return transportMessage;
-        }
 
         void TimeoutsManagerOnTimeoutPushed(TimeoutData timeoutData)
         {
